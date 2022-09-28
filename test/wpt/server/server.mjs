@@ -30,6 +30,48 @@ const server = createServer(async (req, res) => {
   const fullUrl = new URL(req.url, `http://localhost:${server.address().port}`)
 
   switch (fullUrl.pathname) {
+    case '/resources/inspect-headers.py': {
+      // https://github.com/web-platform-tests/wpt/blob/master/fetch/api/resources/inspect-headers.py
+      const headers = []
+      const checkedHeaders = fullUrl.searchParams.get('headers')?.split('|') ?? []
+
+      if (fullUrl.searchParams.has('headers')) {
+        for (let header of checkedHeaders) {
+          header = header.toLowerCase()
+          if (header in req.headers) {
+            headers.push([`x-request-${header}`, req.headers[header] ?? ''])
+          }
+        }
+      }
+
+      if (fullUrl.searchParams.has('cors')) {
+        if ('origin' in req.headers) {
+          headers.push(['Access-Control-Allow-Origin', req.headers.origin ?? ''])
+        } else {
+          headers.push(['Access-Control-Allow-Origin', '*'])
+        }
+
+        headers.push(['Access-Control-Allow-Credentials', 'true'])
+        headers.push(['Access-Control-Allow-Methods', 'GET, POST, HEAD'])
+        const exposedHeaders = checkedHeaders.map(name => `x-request-${name}`)
+        headers.push(['Access-Control-Expose-Headers', exposedHeaders.join(', ')])
+
+        if (fullUrl.searchParams.has('allow_headers')) {
+          headers.push(['Access-Control-Allow-Headers', fullUrl.searchParams.get('allow_headers')])
+        } else {
+          headers.push(['Access-Control-Allow-Headers', Object.keys(req.headers).join(', ')])
+        }
+      }
+
+      headers.push(['content-type', 'text/plain'])
+
+      for (const [key, value] of headers) {
+        res.setHeader(key, value)
+      }
+
+      res.end('')
+      break
+    }
     case '/resources/data.json': {
       // https://github.com/web-platform-tests/wpt/blob/6ae3f702a332e8399fab778c831db6b7dca3f1c6/fetch/api/resources/data.json
       return createReadStream(join(resources, 'data.json'))
