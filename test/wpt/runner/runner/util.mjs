@@ -22,7 +22,9 @@ export function parseMeta (fileContents) {
     /** @type {string[]} */
     global: [],
     /** @type {string[]} */
-    scripts: []
+    scripts: [],
+    /** @type {string} */
+    title: ''
   }
 
   for (const line of lines) {
@@ -51,6 +53,10 @@ export function parseMeta (fileContents) {
         // A relative or absolute file path to the resources
         // needed for the current test.
         meta.scripts.push(groups.match)
+        break
+      }
+      case 'title': {
+        meta.title = groups.match
         break
       }
       default: {
